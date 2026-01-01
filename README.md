@@ -28,7 +28,62 @@ Built around the powerful ESP32 microcontroller, the Padium Pro eliminates the n
 *   **Robust System Design:**
     *   **Boot Diagnostics:** Self-tests SD card and file structure on startup to prevent mid-set failures.
     *   **Screensaver:** Auto-dims display after 30s to prevent burn-in and distractions.
-    *   **Input Protection:** Potentiometer/Encoder logic features hysteresis and debounce to prevent parameter jitter.
+    *   **Input Protection:** Potentiometer/Encoder## Software Features
+
+### 1. Advanced Audio Engine
+- **Crossfading**: Smoothly transitions between pad keys (configurable 0-10s).
+- **Soft Stop**: Gently fades out audio when stopping, preventing abrupt cuts.
+- **Panic Mode**: Long-press "Play/Stop" to immediately kill all audio (with a fast fade).
+- **Mutex Protection**: Ensures audio playback is never interrupted by Wi-Fi operations (`portMAX_DELAY` safety).
+
+### 2. Dynamic Preset Management
+- **Unlimited Presets**: Just add folders to the SD card root (e.g., `Ambient 1`, `Worship Pads`).
+- **Auto-Scanning**: The device automatically scans and sorts folders on boot.
+- **Wi-Fi Manager**: Create new banks, upload mp3s, and delete files wirelessly via a built-in web interface.
+  - **Streaming Web Server**: Optimized "Chunked Transfer" listing to handle thousands of files without crashing.
+
+### 3. Professional UI/UX
+- **OLED/TFT Display**: Shows current key, next key, preset name, volume, and settings.
+- **Screensaver**: Auto-dims the display after 30s of inactivity to prevent burn-in.
+- **Theme Support**: Switch between Dark Mode (Stage) and Light Mode (Studio).
+- **Intuitive Menu**: Adjust Fade Time, Crossfade (On/Off), Brightness, and Wi-Fi Mode.
+
+## Architecture
+
+The firmware has been refactored for professional-grade stability and maintainability:
+
+- **InputManager**: Encapsulates all encoder and button logic (Debounce, Hold detection, Input-Only pin safety).
+- **SettingsManager**: Handles persistent storage (NVS) for volume, brightness, and theme preferences.
+- **WifiManager**: Encapsulates the Web Server and SoftAP logic, keeping the main loop clean.
+- **AudioTask**: Runs on Core 0 (High Priority) to ensure skip-free playback.
+- **Safety Specifics**:
+  - **Thread-Safe**: Uses FreeRTOS Mutexes to protect SD card access.
+  - **Memory-Safe**: Uses `snprintf` and `strncpy` to prevent buffer overflows.
+  - **Crash-Proof**: Web server uses streaming to keep RAM usage low.
+
+## History & Evolution
+
+This project is the professional evolution of the Padium series:
+1.  **Padium Mini (Arduino)**: The original proof of concept. https://github.com/henryhamon/padium-mini-ino
+2.  **Padium Mini (PlatformIO)**: Variable architecture. https://github.com/henryhamon/padium-mini
+3.  **Padium Pro (Current)**: ESP32-based, RTOS-driven, with Wi-Fi and TFT support.
+
+## Hardware Requirements
+
+- **MCU**: ESP32 Dev Module (WROOM-32)
+- **Audio**: MAX98357A I2S Amp
+- **Display**: ST7789 TFT (240x240)
+- **Controls**:
+  - Rotary Encoder (Navigation) + Button
+  - Rotary Encoder (Volume) + Button
+  - 2x Footswitches (Next/Prev)
+  - 1x Play/Stop Button
+- **Storage**: MicroSD Card Module (VSPI)
+
+## Pinout Configuration
+
+See `src/Config.h` for the exact pin definitions. **Note**: Pins GPIO 34, 35, 36, and 39 are input-only on the ESP32 and do not support internal pull-ups; external 10k pull-up resistors are required for buttons connected to these pins.
+ Padium Pro does), you **MUST** use external 10k pull-up resistors to 3.3V. Internal pull-ups are not available on these pins.
 
 ## Menu System
 

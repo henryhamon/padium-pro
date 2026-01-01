@@ -19,13 +19,9 @@ unsigned long fadeStartTime = 0;
 char nextFilename[64];
 
 void audioTask(void *parameter) {
-  // Initialize SPI for SD (VSPI)
-  SPIClass *vspi = new SPIClass(VSPI);
-  vspi->begin(SD_SCLK, SD_MISO, SD_MOSI, SD_CS);
-
-  // Initialize SD Card
-  if (!SD.begin(SD_CS, *vspi)) {
-    Serial.println("SD Mount Failed!");
+  // SD Card is already initialized in main.cpp
+  if (SD.cardType() == CARD_NONE) {
+    Serial.println("SD Not Ready!");
     vTaskDelete(NULL);
   }
 
@@ -72,13 +68,15 @@ void audioTask(void *parameter) {
       case CMD_CROSSFADE:
         if (currentState == AUDIO_PLAYING || currentState == AUDIO_FADING_IN) {
           // Start Fading OUT
-          strcpy(nextFilename, cmd.filename);
+          strncpy(nextFilename, cmd.filename, sizeof(nextFilename) - 1);
+          nextFilename[sizeof(nextFilename) - 1] = '\0'; // Ensure Null Term
+
           fadeStartTime = millis();
           if (cmd.value > 0)
             fadeDurationMs = cmd.value;
           currentState = AUDIO_FADING_OUT;
         } else {
-          // If idle, just play (fade in optionally, but simpler to just play)
+          // If idle, just play
           if (xSemaphoreTake(sdCardMutex, portMAX_DELAY)) {
             audio.connecttoFS(SD, cmd.filename);
             audio.setVolume(settingsVolume);
@@ -95,13 +93,13 @@ void audioTask(void *parameter) {
 
     switch (currentState) {
     case AUDIO_STOPPING: {
+      // ... (No Change needed here usually, but keeping context check)
       unsigned long elapsed = now - fadeStartTime;
       if (elapsed >= fadeDurationMs) {
         audio.setVolume(0);
         audio.stopSong();
         currentState = AUDIO_IDLE;
       } else {
-        // Linear Fade Down
         float progress = (float)elapsed / fadeDurationMs;
         int newVol = settingsVolume * (1.0f - progress);
         if (newVol < 0)
@@ -113,35 +111,28 @@ void audioTask(void *parameter) {
 
     case AUDIO_FADING_OUT: {
       unsigned long elapsed = now - fadeStartTime;
-      if (elapsed >=
-          fadeDurationMs /
-              2) { // Determine fade out time (e.g. half of transition or full?)
-        // The prompt says "Implement rotary encoder... changing Fade Time".
-        // Let's assume fadeDurationMs is the total crossfade time (FadeOut +
-        // FadeIn)? Or FadeOut takes fadeDurationMs? "Crossfade" usually means
-        // overlap, but here we only have 1 decoder. So it's: Fade Out -> Load
-        // -> Fade In. Let's split fadeDurationMs into two halves: FadeOut and
-        // FadeIn.
+      if (elapsed >= fadeDurationMs / 2) {
 
         // FADE OUT COMPLETE
         audio.setVolume(0);
 
-        // Load Next Song
-        if (xSemaphoreTake(sdCardMutex, 100)) { // Don't block forever
+        // Load Next Song - CRITICAL MUTEX FIX
+        // Wait Indefinitely (or very long) to ensure we don't drop the
+        // transition
+        if (xSemaphoreTake(sdCardMutex, portMAX_DELAY)) {
           audio.connecttoFS(SD, nextFilename);
           xSemaphoreGive(sdCardMutex);
 
           // Start Fading IN
           currentState = AUDIO_FADING_IN;
-          fadeStartTime = now; // Reset timer for fade in
+          fadeStartTime = now;
         } else {
-          // Failed to take mutex? Abort or try next loop?
-          // For safety, go to idle or retry. Let's IDLE.
+          // Should only happen if max delay expires (approx 49 days)
+          // or system failure. Go to Idle.
           currentState = AUDIO_IDLE;
         }
       } else {
-        // Calc Volume
-        // Map elapsed [0 to Duration/2] -> [settingsVolume to 0]
+        // ... (Fade logic)
         float progress = (float)elapsed / (fadeDurationMs / 2.0f);
         int newVol = settingsVolume * (1.0f - progress);
         if (newVol < 0)

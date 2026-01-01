@@ -65,19 +65,19 @@ void UI_Controller::drawPerformance(const char *currentKey, const char *nextKey,
 
   // Next Key (Bottom area)
   char nextBuffer[32];
-  sprintf(nextBuffer, "NEXT: %s", nextKey);
+  snprintf(nextBuffer, sizeof(nextBuffer), "NEXT: %s", nextKey);
   sprite->setTextColor(colorText);
   sprite->drawString(nextBuffer, 120, 170, 2);
 
   // Params (Volume)
   char volBuffer[16];
-  sprintf(volBuffer, "VOL: %d", volume);
+  snprintf(volBuffer, sizeof(volBuffer), "VOL: %d", volume);
   sprite->setTextColor(colorText);
   sprite->drawString(volBuffer, 60, 200, 2);
 
   // Fade Time (Small info)
   char fadeBuffer[16];
-  sprintf(fadeBuffer, "%ds", fadeTimeMs / 1000);
+  snprintf(fadeBuffer, sizeof(fadeBuffer), "%ds", fadeTimeMs / 1000);
   sprite->drawString(fadeBuffer, 180, 200, 2);
 
   // Transition Mode icon/text
@@ -86,6 +86,10 @@ void UI_Controller::drawPerformance(const char *currentKey, const char *nextKey,
 
   sprite->pushSprite(0, 0);
 }
+
+// Menu Labels (Global or Static)
+const char *MENU_LABELS[MENU_COUNT] = {"Fade Time", "Trans.",    "Theme",
+                                       "Bright",    "Wi-Fi Mgr", "Return"};
 
 // MENU VIEW
 void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
@@ -96,14 +100,11 @@ void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
   sprite->setTextColor(colorAccent);
   sprite->setTextSize(1);
   sprite->setTextDatum(MC_DATUM);
-  sprite->drawString("- SETTINGS -", 120, 25, 2); // Uplifted slightly
+  sprite->drawString("- SETTINGS -", 120, 25, 2);
 
   // List Items
   const int startY = 60;
-  const int gapY = 28; // Tighter Gap
-
-  const char *labels[] = {"Fade Time", "Trans.",    "Theme",
-                          "Bright",    "Wi-Fi Mgr", "Exit"};
+  const int gapY = 28;
 
   for (int i = 0; i < MENU_COUNT; i++) {
     int y = startY + (i * gapY);
@@ -111,39 +112,41 @@ void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
     // Color Logic
     uint16_t itemColor = colorText;
     if (i == selectedIndex) {
-      itemColor = colorHighlight; // Green if selected
+      itemColor = colorHighlight;
       if (isEditing)
-        itemColor = TFT_RED; // Red if editing value
+        itemColor = TFT_RED;
     }
 
     sprite->setTextColor(itemColor);
-    sprite->setTextDatum(MR_DATUM); // Align Right for Label
-    sprite->drawString(labels[i], 110, y, 2);
+    sprite->setTextDatum(MR_DATUM);
+    sprite->drawString(MENU_LABELS[i], 110, y, 2);
 
     // Value Draw
-    char valBuffer[32] = ""; // Init empty
+    char valBuffer[32] = "";
     switch (i) {
     case MENU_FADE_TIME:
-      sprintf(valBuffer, "%ds", fadeTimeMs / 1000);
+      snprintf(valBuffer, sizeof(valBuffer), "%ds", fadeTimeMs / 1000);
       break;
     case MENU_TRANSITION:
-      sprintf(valBuffer, "%s", useCrossfade ? "XFade" : "Cut");
+      snprintf(valBuffer, sizeof(valBuffer), "%s",
+               useCrossfade ? "XFade" : "Cut");
       break;
     case MENU_THEME:
-      sprintf(valBuffer, "%s", isDark ? "Dark" : "Light");
+      snprintf(valBuffer, sizeof(valBuffer), "%s", isDark ? "Dark" : "Light");
       break;
     case MENU_BRIGHTNESS:
-      sprintf(valBuffer, "%d%%", (brightness * 100) / 255);
+      snprintf(valBuffer, sizeof(valBuffer), "%d%%", (brightness * 100) / 255);
       break;
+    // Wi-Fi and Return have dynamic "action" text or can use fixed text
     case MENU_WIFI:
-      sprintf(valBuffer, "Start");
+      snprintf(valBuffer, sizeof(valBuffer), "Start");
       break;
     case MENU_EXIT:
-      sprintf(valBuffer, "Return");
+      snprintf(valBuffer, sizeof(valBuffer), "Return");
       break;
     }
 
-    sprite->setTextDatum(ML_DATUM); // Align Left for Value
+    sprite->setTextDatum(ML_DATUM);
     sprite->drawString(valBuffer, 130, y, 2);
   }
 
@@ -167,11 +170,11 @@ void UI_Controller::drawWifiScreen(const char *ssid, const char *ip) {
   sprite->setTextSize(1);
 
   char ssidBuf[64];
-  sprintf(ssidBuf, "SSID: %s", ssid);
+  snprintf(ssidBuf, sizeof(ssidBuf), "SSID: %s", ssid);
   sprite->drawString(ssidBuf, 120, 130, 2);
 
   char ipBuf[64];
-  sprintf(ipBuf, "IP: %s", ip);
+  snprintf(ipBuf, sizeof(ipBuf), "IP: %s", ip);
   sprite->drawString(ipBuf, 120, 155, 2);
 
   // EXIT INSTRUCTION
