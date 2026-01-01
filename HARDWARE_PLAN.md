@@ -13,7 +13,7 @@ This document outlines the Bill of Materials (BOM) and the specific wiring confi
 | **Rotary Encoder** | 2 | Controls | KY-040 type or plain encoder. |
 | **Footswitch** | 3 | Controls | SPST Momentary (Soft Touch recommended). |
 | **Resistor 10kΩ** | 3 | Pull-ups | **CRITICAL:** For GPIO 34, 35, 39. |
-| **MP1584EN** | 1 | Power | Buck Converter (9V Input -> 5V Output). |
+| **Power Regulator** | 1 | Buck Converter | **MP1584EN** (Small) OR **LM2596** (Standard). Converts 9V -> 5V. |
 | **DC Jack** | 1 | Power | 2.1mm Center Negative (Standard Pedal Power). |
 | **Audio Jack** | 2 | Audio Out | 6.35mm (1/4") Mono or Stereo Jacks. |
 
@@ -76,7 +76,8 @@ GPIOs **34, 35, and 39** are **Input Only** and do NOT have internal pull-up res
 To avoid digital noise in the audio signal (a common issue with ESP32 audio):
 
 1.  **Input:** 9V DC (Center Negative - Standard Guitar Pedal Power).
-2.  **Regulation:** Use the **MP1584** Buck Converter to step down 9V -> 5V.
+2.  **Regulation:** Use the **MP1584EN** or **LM2596** Buck Converter to step down 9V -> 5V.
+    * *Important:* If using LM2596, connect it to 9V and adjust the trimpot screw until the output reads **5.0V** on a multimeter **BEFORE** connecting it to the ESP32.
 3.  **Isolation (Optional but Recommended):**
     * Power the ESP32 via the 5V/VIN pin.
     * Power the PCM5102 DAC directly from the 5V source (before it enters the ESP32) or use a separate LDO (Low Drop-Out regulator) like an AMS1117-3.3V dedicated to the DAC analog side if your module supports it.
@@ -98,3 +99,4 @@ Format your SD card as **FAT32**. Create folders for your banks at the root.
 └── Organ Drones/
     └── ...
 ```
+> Note: The system creates a virtual list of these folders on boot.
