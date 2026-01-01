@@ -29,6 +29,9 @@
 #define PIN_ENC_BTN 21
 
 // Display (HSPI)
+// CAUTION: If your TFT_RST is also on GPIO 4, the screen will flicker.
+// RECOMMENDATION: Connect TFT_RST to ESP32 EN pin and set TFT_RST to -1 in
+// platformio.ini
 #define PIN_TFT_BL 4 // Example GPIO for Backlight control
 // #define TFT_SCLK 14
 // #define TFT_CS   15

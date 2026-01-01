@@ -96,13 +96,14 @@ void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
   sprite->setTextColor(colorAccent);
   sprite->setTextSize(1);
   sprite->setTextDatum(MC_DATUM);
-  sprite->drawString("- SETTINGS -", 120, 30, 2);
+  sprite->drawString("- SETTINGS -", 120, 25, 2); // Uplifted slightly
 
   // List Items
-  const int startY = 70;
-  const int gapY = 30;
+  const int startY = 60;
+  const int gapY = 28; // Tighter Gap
 
-  const char *labels[] = {"Fade Time", "Trans.", "Theme", "Bright", "Exit"};
+  const char *labels[] = {"Fade Time", "Trans.",    "Theme",
+                          "Bright",    "Wi-Fi Mgr", "Exit"};
 
   for (int i = 0; i < MENU_COUNT; i++) {
     int y = startY + (i * gapY);
@@ -120,7 +121,7 @@ void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
     sprite->drawString(labels[i], 110, y, 2);
 
     // Value Draw
-    char valBuffer[32];
+    char valBuffer[32] = ""; // Init empty
     switch (i) {
     case MENU_FADE_TIME:
       sprintf(valBuffer, "%ds", fadeTimeMs / 1000);
@@ -134,14 +135,49 @@ void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
     case MENU_BRIGHTNESS:
       sprintf(valBuffer, "%d%%", (brightness * 100) / 255);
       break;
+    case MENU_WIFI:
+      sprintf(valBuffer, "Start");
+      break;
     case MENU_EXIT:
       sprintf(valBuffer, "Return");
-      break; // Polished Text: Return
+      break;
     }
 
     sprite->setTextDatum(ML_DATUM); // Align Left for Value
     sprite->drawString(valBuffer, 130, y, 2);
   }
+
+  sprite->pushSprite(0, 0);
+}
+
+// WIFI SCREEN
+void UI_Controller::drawWifiScreen(const char *ssid, const char *ip) {
+  sprite->fillSprite(TFT_BLACK); // Always Dark for tech mode
+
+  sprite->setTextDatum(MC_DATUM);
+
+  // TITLE
+  sprite->setTextColor(TFT_GREEN);
+  sprite->setTextSize(1);
+  sprite->drawString("WI-FI MANAGER", 120, 50, 4); // Big Font
+  sprite->drawString("ACTIVE", 120, 80, 2);
+
+  // INFO
+  sprite->setTextColor(TFT_WHITE);
+  sprite->setTextSize(1);
+
+  char ssidBuf[64];
+  sprintf(ssidBuf, "SSID: %s", ssid);
+  sprite->drawString(ssidBuf, 120, 130, 2);
+
+  char ipBuf[64];
+  sprintf(ipBuf, "IP: %s", ip);
+  sprite->drawString(ipBuf, 120, 155, 2);
+
+  // EXIT INSTRUCTION
+  sprite->setTextColor(TFT_RED);
+  sprite->drawString("PRESS VOL BUTTON", 120, 210, 2);
+  sprite->drawString("TO EXIT", 120, 230, 2);
 
   sprite->pushSprite(0, 0);
 }
@@ -158,7 +194,6 @@ void UI_Controller::showSplashScreen() {
 
   // PRO
   sprite->setTextSize(2); // Med
-  // Use Hardcoded Green for Brand
   sprite->setTextColor(TFT_GREEN);
   sprite->drawString("PRO", 120, 140, 4);
 

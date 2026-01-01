@@ -4,15 +4,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 
-enum EditMode {
-  MODE_PRESET,
-  MODE_FADE_TIME,
-  MODE_TRANSITION
-  // We keep this specific enum for main.cpp logic legacy or internal UI usage?
-  // Actually, plan says "Edit Mode" is now distinct from "Menu View".
-  // Let's redefine EditMode or keep it for compatibility if implementation uses
-  // it. Plan: "Encoder Click enters "Edit Mode" (value turns red/green)..."
-};
+enum EditMode { MODE_PRESET, MODE_FADE_TIME, MODE_TRANSITION };
 
 // Menu Options
 enum MenuOption {
@@ -20,6 +12,7 @@ enum MenuOption {
   MENU_TRANSITION,
   MENU_THEME,
   MENU_BRIGHTNESS,
+  MENU_WIFI, // New Option
   MENU_EXIT,
   MENU_COUNT // Total items
 };
@@ -40,11 +33,11 @@ public:
   void drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
                 bool useCrossfade, bool isDark, int brightness);
 
+  // Wi-Fi Screen
+  void drawWifiScreen(const char *ssid, const char *ip);
+
   void showSplashScreen();
   void showErrorScreen(const char *errorMessage);
-
-  // Legacy update method kept/modified if needed or deprecated
-  // void update(...);
 
 private:
   TFT_eSprite *sprite;
