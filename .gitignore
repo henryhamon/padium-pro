@@ -39,3 +39,6 @@
 
 # debug information files
 *.dwo
+
+# OS Generated Files
+.DS_Store
