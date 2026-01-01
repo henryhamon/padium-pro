@@ -4,7 +4,7 @@
 
 **Standalone Hi-Fi Ambient Pad Player for Worship**
 
-Padium Pro is a significant evolution of the Padium concept. It transitions from a simple controller to a professional, standalone digital audio player designed specifically for live worship environments.
+Padium Pro is a significant evolution of the Padium concept, advancing the work started in [padium-mini](https://github.com/henryhamon/padium-mini) and [padium-mini-ino](https://github.com/henryhamon/padium-mini-ino). It transitions from a simple controller to a professional, standalone digital audio player designed specifically for live worship environments.
 
 Built around the powerful ESP32 microcontroller, the Padium Pro eliminates the need for a laptop on stage. It delivers pristine, continuous ambient pads through a dedicated high-fidelity I2S DAC, controlled via an intuitive circular display and rugged footswitches.
 
