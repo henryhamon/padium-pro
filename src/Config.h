@@ -16,6 +16,8 @@
 #define SD_SCLK 18
 
 // Controls
+// WARNING: GPIOs 34, 35, 39 are INPUT-ONLY and have NO internal pull-ups.
+// You MUST add external 10k pull-up resistors to 3V3 for these pins to work.
 #define PIN_VOL_ENC_A 34
 #define PIN_VOL_ENC_B 35
 #define PIN_VOL_ENC_BTN 39
@@ -26,8 +28,8 @@
 #define PIN_ENC_B 17
 #define PIN_ENC_BTN 21
 
-// Display (HSPI) - Defined in platformio.ini but good to have reference or
-// specific control pins if needed #define TFT_MISO 12 #define TFT_MOSI 13
+// Display (HSPI)
+#define PIN_TFT_BL 4 // Example GPIO for Backlight control
 // #define TFT_SCLK 14
 // #define TFT_CS   15
 // #define TFT_DC   2
@@ -37,13 +39,8 @@
 #define UI_SCREEN_WIDTH 240
 #define UI_SCREEN_HEIGHT 240
 
-// Colors
-#define C_BG TFT_BLACK
-#define C_ACCENT TFT_SKYBLUE
-#define C_TEXT TFT_WHITE
-#define C_HILL 0x10A2
-#define C_HIGHLIGHT TFT_GREEN
-#define C_ERROR_BG TFT_RED
-#define C_ERROR_TEXT TFT_YELLOW
+// Colors - DEPRECATED (Moved to Dynamic Theme in UI_Logic)
+// Legacy colors removed to prevent usage.
+// Use UI_Controller::applyTheme and members or TFT_Xx constants.
 
 #endif

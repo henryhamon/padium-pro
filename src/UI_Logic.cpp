@@ -6,85 +6,150 @@ UI_Controller::UI_Controller() : tft() { sprite = new TFT_eSprite(&tft); }
 void UI_Controller::init() {
   tft.init();
   tft.setRotation(0);
-  tft.fillScreen(C_BG);
+  tft.fillScreen(TFT_BLACK); // Initial clear
 
   // Create a 240x240 sprite for full screen update
   sprite->createSprite(240, 240);
+
+  // Default Theme (Dark)
+  applyTheme(true);
+}
+
+void UI_Controller::applyTheme(bool isDark) {
+  if (isDark) {
+    colorBg = TFT_BLACK;
+    colorText = TFT_WHITE;
+    colorAccent = TFT_SKYBLUE;
+    colorHill = 0x10A2; // Dark Grey-ish
+    colorHighlight = TFT_GREEN;
+  } else {
+    colorBg = TFT_WHITE;
+    colorText = TFT_BLACK;
+    colorAccent = TFT_BLUE;
+    colorHill = 0xC618;             // Light Grey
+    colorHighlight = TFT_DARKGREEN; // Darker green for contrast on white
+  }
 }
 
 void UI_Controller::drawConvexBackground() {
-  sprite->fillSprite(C_BG);
+  sprite->fillSprite(colorBg);
 
   // Draw the "Hill" - a gentle arch at the bottom
-  sprite->fillCircle(120, 330, 160, C_HILL);
+  sprite->fillCircle(120, 330, 160, colorHill);
 }
 
 void UI_Controller::drawText(const char *text, int x, int y, uint8_t font,
                              uint16_t color, uint8_t datum) {
-  sprite->setTextColor(color, C_BG); // BG color is ignored in transparent
-                                     // sprite mode mostly but good practice
+  sprite->setTextColor(color, colorBg);
   sprite->setTextDatum(datum);
-  sprite->setTextFont(font); // internal fonts for now
-
-  // For bespoke fonts, user would load them separately.
-  // Using internal font 4 (26px) and 2 (16px) for simplicity
-
+  sprite->setTextFont(font);
   sprite->drawString(text, x, y);
 }
 
-void UI_Controller::update(const char *currentKey, const char *nextKey,
-                           const char *presetName, int volume, int fadeTimeMs,
-                           EditMode mode, bool useCrossfade) {
+// PERFORMANCE VIEW
+void UI_Controller::drawPerformance(const char *currentKey, const char *nextKey,
+                                    const char *presetName, int volume,
+                                    int fadeTimeMs, bool useCrossfade) {
   drawConvexBackground();
 
   // Current Key (Large, center top)
-  sprite->setTextSize(3); // Scale up font 4
-  sprite->setTextColor(C_TEXT);
+  sprite->setTextSize(3);
+  sprite->setTextColor(colorText);
   sprite->setTextDatum(MC_DATUM);
   sprite->drawString(currentKey, 120, 80, 4);
   sprite->setTextSize(1); // Reset
 
   // Preset Name (Small, above Key)
-  // Highlight if active
-  uint16_t presetColor = (mode == MODE_PRESET) ? C_HIGHLIGHT : C_ACCENT;
-  sprite->setTextColor(presetColor);
+  sprite->setTextColor(colorAccent);
   sprite->drawString(presetName, 120, 40, 2);
 
-  // Next Key (Bottom area, inside the hill)
+  // Next Key (Bottom area)
   char nextBuffer[32];
   sprintf(nextBuffer, "NEXT: %s", nextKey);
-  sprite->setTextColor(TFT_SILVER);
+  sprite->setTextColor(colorText);
   sprite->drawString(nextBuffer, 120, 170, 2);
 
-  // Params (Volume) - Volume is not part of the modal edit in this requirement,
-  // usually just Pot
+  // Params (Volume)
   char volBuffer[16];
   sprintf(volBuffer, "VOL: %d", volume);
-  sprite->setTextColor(TFT_SILVER); // Always silver or white
+  sprite->setTextColor(colorText);
   sprite->drawString(volBuffer, 60, 200, 2);
 
-  // Fade Time
+  // Fade Time (Small info)
   char fadeBuffer[16];
-  sprintf(fadeBuffer, "FADE: %ds", fadeTimeMs / 1000);
-  uint16_t fadeColor = (mode == MODE_FADE_TIME) ? C_HIGHLIGHT : TFT_SILVER;
-  sprite->setTextColor(fadeColor);
+  sprintf(fadeBuffer, "%ds", fadeTimeMs / 1000);
   sprite->drawString(fadeBuffer, 180, 200, 2);
 
-  // Transition Mode
+  // Transition Mode icon/text
   const char *transText = useCrossfade ? "XFADE" : "CUT";
-  uint16_t transColor = (mode == MODE_TRANSITION) ? C_HIGHLIGHT : TFT_SILVER;
-  sprite->setTextColor(transColor);
-  sprite->drawString(transText, 120, 215,
-                     2); // Positioned between Vol and Fade, slightly lower
+  sprite->drawString(transText, 120, 215, 2);
 
-  // Push sprite to screen
+  sprite->pushSprite(0, 0);
+}
+
+// MENU VIEW
+void UI_Controller::drawMenu(int selectedIndex, bool isEditing, int fadeTimeMs,
+                             bool useCrossfade, bool isDark, int brightness) {
+  sprite->fillSprite(colorBg);
+
+  // Header
+  sprite->setTextColor(colorAccent);
+  sprite->setTextSize(1);
+  sprite->setTextDatum(MC_DATUM);
+  sprite->drawString("- SETTINGS -", 120, 30, 2);
+
+  // List Items
+  const int startY = 70;
+  const int gapY = 30;
+
+  const char *labels[] = {"Fade Time", "Trans.", "Theme", "Bright", "Exit"};
+
+  for (int i = 0; i < MENU_COUNT; i++) {
+    int y = startY + (i * gapY);
+
+    // Color Logic
+    uint16_t itemColor = colorText;
+    if (i == selectedIndex) {
+      itemColor = colorHighlight; // Green if selected
+      if (isEditing)
+        itemColor = TFT_RED; // Red if editing value
+    }
+
+    sprite->setTextColor(itemColor);
+    sprite->setTextDatum(MR_DATUM); // Align Right for Label
+    sprite->drawString(labels[i], 110, y, 2);
+
+    // Value Draw
+    char valBuffer[32];
+    switch (i) {
+    case MENU_FADE_TIME:
+      sprintf(valBuffer, "%ds", fadeTimeMs / 1000);
+      break;
+    case MENU_TRANSITION:
+      sprintf(valBuffer, "%s", useCrossfade ? "XFade" : "Cut");
+      break;
+    case MENU_THEME:
+      sprintf(valBuffer, "%s", isDark ? "Dark" : "Light");
+      break;
+    case MENU_BRIGHTNESS:
+      sprintf(valBuffer, "%d%%", (brightness * 100) / 255);
+      break;
+    case MENU_EXIT:
+      sprintf(valBuffer, "Return");
+      break; // Polished Text: Return
+    }
+
+    sprite->setTextDatum(ML_DATUM); // Align Left for Value
+    sprite->drawString(valBuffer, 130, y, 2);
+  }
+
   sprite->pushSprite(0, 0);
 }
 
 void UI_Controller::showSplashScreen() {
-  sprite->fillSprite(C_BG);
+  sprite->fillSprite(TFT_BLACK); // Always Black splash
 
-  sprite->setTextColor(C_TEXT);
+  sprite->setTextColor(TFT_WHITE);
   sprite->setTextDatum(MC_DATUM);
 
   // PADIUM
@@ -93,7 +158,8 @@ void UI_Controller::showSplashScreen() {
 
   // PRO
   sprite->setTextSize(2); // Med
-  sprite->setTextColor(C_HIGHLIGHT);
+  // Use Hardcoded Green for Brand
+  sprite->setTextColor(TFT_GREEN);
   sprite->drawString("PRO", 120, 140, 4);
 
   // System Check
@@ -105,13 +171,13 @@ void UI_Controller::showSplashScreen() {
 }
 
 void UI_Controller::showErrorScreen(const char *errorMessage) {
-  sprite->fillSprite(C_ERROR_BG);
+  // Hardcoded Alert Colors
+  sprite->fillSprite(TFT_RED);
 
-  sprite->setTextColor(C_ERROR_TEXT);
+  sprite->setTextColor(TFT_YELLOW);
   sprite->setTextDatum(MC_DATUM);
   sprite->setTextSize(2);
 
-  // Split long strings if needed, but simple center draw for now
   sprite->drawString(errorMessage, 120, 120, 2);
 
   sprite->pushSprite(0, 0);
