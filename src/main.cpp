@@ -2,6 +2,8 @@
 #include "Config.h"
 #include "UI_Logic.h"
 #include <Arduino.h>
+#include <SD.h>
+#include <SPI.h>
 
 // --- Globals ---
 UI_Controller ui;
@@ -20,8 +22,9 @@ int currentKeyIndex = 0; // What is playing
 int nextKeyIndex = 0;    // What is queued
 
 int volume = 21;
-int lastPotVal = -1;
-unsigned long lastPotSendTime = 0;
+// Removed Potentiometer variables
+// int lastPotVal = -1;
+// unsigned long lastPotSendTime = 0;
 
 bool isPlayingState = false;
 
@@ -49,26 +52,41 @@ void updateUI() {
 }
 
 void scanControls() {
-  // 1. Potentiometer (Volume)
-  int potVal = analogRead(PIN_POT);
-  int newVol = map(potVal, 0, 4095, 0, 21);
+  // 1. Volume Encoder (Replaces Potentiometer)
+  static int lastVolClk = HIGH;
+  int currentVolClk = digitalRead(PIN_VOL_ENC_A);
+  if (currentVolClk != lastVolClk && currentVolClk == LOW) { // Falling Edge
+    int dtValue = digitalRead(PIN_VOL_ENC_B);
+    int direction = (dtValue != currentVolClk) ? 1 : -1;
 
-  // Hysteresis Fix: Threshold > 1
-  if (abs(newVol - volume) > 1) {
-    if (millis() - lastPotSendTime > 100) {
+    int newVol = volume + direction;
+    // Clamp 0-21
+    if (newVol < 0)
+      newVol = 0;
+    if (newVol > 21)
+      newVol = 21;
+
+    if (newVol != volume) {
       volume = newVol;
       AudioCommand cmd;
       cmd.type = CMD_SET_VOLUME;
       cmd.value = volume;
       xQueueSend(audioQueue, &cmd, 0);
-      lastPotSendTime = millis();
-      // UI update for volume can be implicit or explicit,
-      // usually we update UI on every significant change
       updateUI();
     }
   }
+  lastVolClk = currentVolClk;
 
-  // 2. Rotary Encoder
+  // Volume Encoder Button (BACK / EXIT)
+  if (digitalRead(PIN_VOL_ENC_BTN) == LOW) {
+    if (editMode != MODE_PRESET) {
+      editMode = MODE_PRESET;
+      updateUI();
+      delay(200); // Simple debounce
+    }
+  }
+
+  // 2. Rotary Encoder (Navigation)
   int currentClk = digitalRead(PIN_ENC_A);
   if (currentClk != lastClk && currentClk == LOW) { // Falling Edge
     int dtValue = digitalRead(PIN_ENC_B);
@@ -226,19 +244,57 @@ void scanControls() {
 void setup() {
   Serial.begin(115200);
 
+  // 1. Setup Controls
   pinMode(PIN_PREV, INPUT_PULLUP);
   pinMode(PIN_PLAY, INPUT_PULLUP);
   pinMode(PIN_NEXT, INPUT_PULLUP);
+
   pinMode(PIN_ENC_A, INPUT_PULLUP);
   pinMode(PIN_ENC_B, INPUT_PULLUP);
   pinMode(PIN_ENC_BTN, INPUT_PULLUP);
 
+  // Volume Encoder
+  pinMode(PIN_VOL_ENC_A, INPUT_PULLUP);
+  pinMode(PIN_VOL_ENC_B, INPUT_PULLUP);
+  pinMode(PIN_VOL_ENC_BTN, INPUT); // Input only
+
+  // 2. Initialize UI
+  ui.init();
+
+  // 3. SHOW SPLASH SCREEN
+  ui.showSplashScreen();
+  delay(2000); // 2s Boot Delay
+
+  // 4. SELF-TEST: SD CARD
+  SPIClass tempSPI(VSPI);
+  tempSPI.begin(SD_SCLK, SD_MISO, SD_MOSI, SD_CS);
+  if (!SD.begin(SD_CS, tempSPI)) {
+    ui.showErrorScreen("NO SD CARD");
+    while (true) {
+      delay(100);
+    } // Halt
+  }
+
+  // 5. SELF-TEST: FILE SYSTEM
+  // Check if default folder exists
+  char checkPath[32];
+  sprintf(checkPath, "/%s", presets[0]);
+  if (!SD.exists(checkPath)) {
+    ui.showErrorScreen("MISSING FILES");
+    while (true) {
+      delay(100);
+    } // Halt
+  }
+  // Cleanup SD before AudioTask takes over
+  SD.end();
+
+  // 6. Start Audio Task (Core 0)
   audioQueue = xQueueCreate(10, sizeof(AudioCommand));
   sdCardMutex = xSemaphoreCreateMutex();
 
   xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096 * 4, NULL, 2, NULL, 0);
 
-  ui.init();
+  // 7. Start Main UI
   updateUI();
 }
 

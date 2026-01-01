@@ -16,7 +16,9 @@
 #define SD_SCLK 18
 
 // Controls
-#define PIN_POT 34 // ADC1
+#define PIN_VOL_ENC_A 34
+#define PIN_VOL_ENC_B 35
+#define PIN_VOL_ENC_BTN 39
 #define PIN_PREV 32
 #define PIN_PLAY 33
 #define PIN_NEXT 27
@@ -41,5 +43,7 @@
 #define C_TEXT TFT_WHITE
 #define C_HILL 0x10A2
 #define C_HIGHLIGHT TFT_GREEN
+#define C_ERROR_BG TFT_RED
+#define C_ERROR_TEXT TFT_YELLOW
 
 #endif

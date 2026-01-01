@@ -80,3 +80,39 @@ void UI_Controller::update(const char *currentKey, const char *nextKey,
   // Push sprite to screen
   sprite->pushSprite(0, 0);
 }
+
+void UI_Controller::showSplashScreen() {
+  sprite->fillSprite(C_BG);
+
+  sprite->setTextColor(C_TEXT);
+  sprite->setTextDatum(MC_DATUM);
+
+  // PADIUM
+  sprite->setTextSize(3); // Large
+  sprite->drawString("PADIUM", 120, 100, 4);
+
+  // PRO
+  sprite->setTextSize(2); // Med
+  sprite->setTextColor(C_HIGHLIGHT);
+  sprite->drawString("PRO", 120, 140, 4);
+
+  // System Check
+  sprite->setTextSize(1);
+  sprite->setTextColor(TFT_SILVER);
+  sprite->drawString("System Check...", 120, 200, 2);
+
+  sprite->pushSprite(0, 0);
+}
+
+void UI_Controller::showErrorScreen(const char *errorMessage) {
+  sprite->fillSprite(C_ERROR_BG);
+
+  sprite->setTextColor(C_ERROR_TEXT);
+  sprite->setTextDatum(MC_DATUM);
+  sprite->setTextSize(2);
+
+  // Split long strings if needed, but simple center draw for now
+  sprite->drawString(errorMessage, 120, 120, 2);
+
+  sprite->pushSprite(0, 0);
+}
